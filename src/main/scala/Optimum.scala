@@ -22,9 +22,8 @@ object Optimum extends JFXApp {
               chooser.showOpenDialog(stage) match {
                 case null =>
                 case file =>
-                  graph.company = Company.loadFrom(file)
+                  ???
               }
-
             }
           }
           val undoButton = new Button("Undo")
