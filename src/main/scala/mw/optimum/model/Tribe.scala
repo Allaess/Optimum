@@ -15,6 +15,11 @@ trait Tribe {
     weights.sum
   }
   override def toString = s"Tribe($name)"
+  override def equals(obj: Any) = obj match {
+    case that: Tribe => this.name == that.name
+    case _ => false
+  }
+  override def hashCode = name.hashCode
 }
 object Tribe {
   class Mutable(val name: String = newName) extends Tribe {

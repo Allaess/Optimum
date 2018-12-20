@@ -21,7 +21,7 @@ trait Company {
       tribe2 <- tribes
       if tribe1 != tribe2 && tribe1.size + tribe2.size <= maxTribeSize
     } yield tribe1 <-> tribe2
-    weights.max
+    if (weights.isEmpty) 0 else weights.max
   }
   def mostCoupled(maxTribeSize: Int) = {
     val maxWeight = this.maxWeight(maxTribeSize)
@@ -42,6 +42,9 @@ trait Company {
   override def toString = s"Company(${tribes.size} tribes)"
 }
 object Company extends RegexParsers {
+  val empty: Company = new Company {
+    val tribes = Nil
+  }
   def loadFrom(file: File): Company = {
     val input = Source.fromInputStream(new FileInputStream(file)).getLines.drop(1)
     val company = new Company.Mutable
