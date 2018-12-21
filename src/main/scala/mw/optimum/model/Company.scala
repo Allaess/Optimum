@@ -24,7 +24,8 @@ trait Company {
   }
   def mostCoupled(maxTribeSize: Int) = {
     val maxWeight = this.maxWeight(maxTribeSize)
-    for {
+    if (maxWeight == 0) Nil
+    else for {
       tribe1 <- tribes
       tribe2 <- tribes
       weight = tribe1 <-> tribe2
@@ -41,7 +42,7 @@ trait Company {
       tribe1 <- tribes
       tribe2 <- tribes if tribe1 != tribe2
     } yield tribe1 <-> tribe2
-    weights.sum
+    weights.sum / 2
   }
   def bestScore(maxTribeSize: Int): Int = next(maxTribeSize) match {
     case Some(next) => next.bestScore(maxTribeSize)

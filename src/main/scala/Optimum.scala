@@ -3,27 +3,50 @@ import mw.optimum.view.{Graph, GraphPane}
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.scene.Scene
-import scalafx.scene.control.{Button, ScrollPane, TextField}
+import scalafx.scene.control.{Button, Label, ScrollPane}
 import scalafx.scene.layout.{BorderPane, HBox}
 import scalafx.stage.FileChooser
-import scala.util.Try
 
 object Optimum extends JFXApp {
   var undoStack = List.empty[Company]
   var company = Company.empty
   var redoStack = List.empty[Company]
   val graphPane = new GraphPane
+  var maxTribeSize = 7
   stage = new PrimaryStage {
     title = "Optimum"
     scene = new Scene {
       root = new BorderPane {
         top = new HBox {
-          val sizeField = new TextField {
-            text = "7"
+          val sizeField = new Label {
+            text = s" Max squads per tribe: $maxTribeSize "
           }
-          val loadScoreField = new TextField
-          val currentScoreField = new TextField
-          val bestScoreField = new TextField
+          val loadScoreField = new Label {
+            text = "     Start Score: None     "
+          }
+          val currentScoreField = new Label {
+            text = "Current score: None     "
+          }
+          val bestScoreField = new Label {
+            text = "Best score: None     "
+          }
+          val dependenciesCount = new Label {
+            text = "Dependencies: 0     "
+          }
+          val lessSquadsButton = new Button("-") {
+            onAction = { _ =>
+              maxTribeSize -= 1
+              sizeField.text = s" Max squads per tribe: $maxTribeSize "
+              refresh()
+            }
+          }
+          val moreSquadsButton = new Button("+") {
+            onAction = { _ =>
+              maxTribeSize += 1
+              sizeField.text = s" Max squads per tribe: $maxTribeSize "
+              refresh()
+            }
+          }
           val loadButton = new Button("Load") {
             onAction = { _ =>
               val chooser = new FileChooser
@@ -33,7 +56,7 @@ object Optimum extends JFXApp {
                   undoStack = Nil
                   company = Company.loadFrom(file)
                   redoStack = Nil
-                  loadScoreField.text = s"${company.score}"
+                  loadScoreField.text = s"     Start score: ${company.score}     "
                   refresh()
               }
             }
@@ -82,8 +105,9 @@ object Optimum extends JFXApp {
               }
             }
           }
-          children = loadButton :: undoButton :: redoButton :: dropButton :: nextButton :: sizeField ::
-            loadScoreField :: currentScoreField :: bestScoreField :: Nil
+          children = loadButton :: undoButton :: redoButton :: dropButton :: nextButton ::
+            lessSquadsButton :: sizeField :: moreSquadsButton ::
+            loadScoreField :: currentScoreField :: bestScoreField :: dependenciesCount :: Nil
           def refresh(): Unit = {
             val previousGraph = graphPane.currentGraph
             val newGraph = Graph(company, maxTribeSize, previousGraph)
@@ -92,10 +116,10 @@ object Optimum extends JFXApp {
             redoButton.disable = redoStack.isEmpty
             nextButton.disable = newGraph.mostCoupled.isEmpty
             dropButton.disable = !company.tribes.exists(_.size > 1)
-            currentScoreField.text = s"${company.score}"
-            bestScoreField.text = s"${company.bestScore(maxTribeSize)}"
+            currentScoreField.text = s"Current score: ${company.score}     "
+            bestScoreField.text = s"Best score: ${company.bestScore(maxTribeSize)}     "
+            dependenciesCount.text = s"Dependencies: ${newGraph.mostCoupled.headOption.map(_._2).getOrElse(0)}"
           }
-          def maxTribeSize = Try(sizeField.text().toInt).getOrElse(0)
         }
         center = new ScrollPane {
           content = graphPane

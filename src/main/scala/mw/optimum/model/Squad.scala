@@ -14,9 +14,7 @@ trait Squad {
 object Squad {
   class Mutable(val name: String) extends Squad {
     var weights = Map.empty[Squad, Int]
-    def +=(pair: (Squad, Int)) = weights.get(pair._1) match {
-      case Some(w) => weights += pair._1 -> (pair._2 + w)
-      case None => weights += pair
-    }
+    def +=(pair: (Squad, Int)) = weights += pair
   }
 }
+

@@ -17,7 +17,7 @@ case class Graph(company: Company, maxTribeSize: Int, positions: Map[Tribe, Vect
           thisPosition = position(thisTribe)
           thatPosition = position(thatTribe)
           targetDistance = distance(thisTribe, thatTribe)
-          corr = correction(thisPosition, thatPosition, targetDistance - 5, targetDistance + 5)
+          corr = correction(thisPosition, thatPosition, targetDistance, targetDistance)
           if corr != Vector.zero
         } yield corr
         val corr =
@@ -117,11 +117,18 @@ case class Graph(company: Company, maxTribeSize: Int, positions: Map[Tribe, Vect
     squads ++ tribes
   }
   lazy val links = {
-    val tribes = for ((tribe1, weight, tribe2) <- mostCoupled) yield Link(bubble(tribe1), weight, bubble(tribe2))
+    def isChosen(tuple: (Tribe, Int, Tribe)) = mostCoupled.headOption match {
+      case Some(chosen) =>
+        (tuple._1 == chosen._1 && tuple._3 == chosen._3) ||
+          (tuple._1 == chosen._3 && tuple._3 == chosen._1)
+      case None => false
+    }
+    val tribes = for (tuple@(tribe1, weight, tribe2) <- mostCoupled) yield
+      Link(bubble(tribe1), weight, bubble(tribe2), isChosen(tuple))
     val squads = for {
       tribe <- company.tribes if tribe.size > 1
       squad <- tribe.squads
-    } yield Link(bubble(tribe), 1, bubble(squad))
+    } yield Link(bubble(tribe), 1, bubble(squad), chosen = false)
     squads ++ tribes
   }
   lazy val tribeToBubble = {
