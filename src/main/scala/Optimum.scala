@@ -85,7 +85,6 @@ object Optimum extends JFXApp {
 					children = loadButton :: undoButton :: redoButton :: dropButton :: nextButton :: sizeField ::
 						loadScoreField :: currentScoreField :: bestScoreField :: Nil
 					def refresh(): Unit = {
-						val maxTribeSize = Try(sizeField.text().toInt).getOrElse(0)
 						val previousGraph = graphPane.currentGraph
 						val newGraph = Graph(company, maxTribeSize, previousGraph)
 						graphPane.show(newGraph)
