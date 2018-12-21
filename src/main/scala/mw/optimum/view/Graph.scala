@@ -105,7 +105,7 @@ case class Graph(company: Company, maxTribeSize: Int, positions: Map[Tribe, Vect
   } else {
     val angle = math.toRadians((index - 18) * 20)
     position(tribe) + Vector(math.cos(angle) * 300, math.sin(angle) * 300)
-  }).head
+  }).headOption.getOrElse(Vector.random)
   def bubbles = {
     val tribes = for (tribe <- company.tribes if tribe.size > 0) yield Bubble(tribe, position(tribe))
     val squads = for {
@@ -132,7 +132,8 @@ object Graph {
   def apply(company: Company, maxTribeSize: Int, previousGraph: Graph): Graph = {
     val positions = for (tribe <- company.tribes) yield {
       if (tribe.size == 1) tribe -> previousGraph.position(tribe.squads.head)
-      else tribe -> previousGraph.positions.getOrElse(tribe, Vector.random)
+      else tribe -> previousGraph.positions.getOrElse(tribe, Vector.average(tribe.squads.map(previousGraph.position))
+      )
     }
     Graph(company, maxTribeSize, previousGraph.positions ++ positions.toMap).layout.translate
   }

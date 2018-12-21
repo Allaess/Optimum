@@ -13,5 +13,12 @@ case class Vector(x: Double, y: Double) {
 }
 object Vector {
   val zero = Vector(0, 0)
-  def random = Vector(Random.nextDouble * 1600, Random.nextDouble * 900)
+  def random = Vector(Random.nextDouble * 1600 + 30, Random.nextDouble * 900 + 30)
+  def average(coll: Iterable[Vector]) = {
+    if (coll.isEmpty) Vector.random
+    else {
+      val sum = (Vector.zero /: coll) (_ + _)
+      sum / coll.size
+    }
+  }
 }
