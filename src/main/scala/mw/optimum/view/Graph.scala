@@ -10,36 +10,20 @@ case class Graph(company: Company, maxTribeSize: Int, positions: Map[Tribe, Vect
     val tolerance = 1
     var moved = false
     val corrections = for (thisTribe <- company.tribes) yield {
-      val linkedTribes = for ((tribe1, _, tribe2) <- mostCoupled if tribe1 == thisTribe) yield tribe2
-      if (linkedTribes.nonEmpty) {
-        val corrections = for {
-          thatTribe <- linkedTribes
-          thisPosition = position(thisTribe)
-          thatPosition = position(thatTribe)
-          targetDistance = distance(thisTribe, thatTribe)
-          corr = correction(thisPosition, thatPosition, targetDistance, targetDistance)
-          if corr != Vector.zero
-        } yield corr
-        val corr =
-          if (corrections.isEmpty) Vector.zero
-          else (Vector.zero /: corrections) (_ + _) / corrections.size
-        moved ||= corr.size > tolerance
-        thisTribe -> corr
-      } else {
-        val corrections = for {
-          thatTribe <- company.tribes if thisTribe != thatTribe
-          thisPosition = position(thisTribe)
-          thatPosition = position(thatTribe)
-          minDistance = distance(thisTribe, thatTribe)
-          corr = minCorrection(thisPosition, thatPosition, minDistance)
-          if corr != Vector.zero
-        } yield corr
-        val correction =
-          if (corrections.isEmpty) Vector.zero
-          else (Vector.zero /: corrections) (_ + _) / corrections.size
-        moved ||= correction.size > tolerance
-        thisTribe -> correction
-      }
+      val corrs = for {
+        thatTribe <- company.tribes if thisTribe != thatTribe
+        thisPosition = position(thisTribe)
+        thatPosition = position(thatTribe)
+        min = minDistance(thisTribe, thatTribe)
+        max = maxDistance(thisTribe, thatTribe)
+        corr = correction(thisPosition, thatPosition, min, max)
+        if corr != Vector.zero
+      } yield corr
+      val corr =
+        if (corrs.isEmpty) Vector.zero
+        else (Vector.zero /: corrs) (_ + _) / corrs.size
+      moved ||= corr.size > tolerance
+      thisTribe -> corr
     }
     if (moved) {
       val newPositions = (for ((tribe, correction) <- corrections) yield
@@ -93,7 +77,14 @@ case class Graph(company: Company, maxTribeSize: Int, positions: Map[Tribe, Vect
     else if (tribe.size <= 18) 200
     else 300
   }
-  def distance(tribe1: Tribe, tribe2: Tribe) = diameter(tribe1) + diameter(tribe2) + 100
+  def minDistance(tribe1: Tribe, tribe2: Tribe): Double = diameter(tribe1) + diameter(tribe2) + 100
+  def maxDistance(tribe1: Tribe, tribe2: Tribe) = {
+    val linkedTribes = mostCoupled.collect {
+      case (t1, _, t2) if tribe1 == t1 => t2
+    }
+    if (linkedTribes.contains(tribe2)) minDistance(tribe1, tribe2)
+    else Double.MaxValue
+  }
   def position(tribe: Tribe): Vector = positions(tribe)
   def position(SQUAD: Squad): Vector = (for {
     tribe <- company.tribes
