@@ -2,12 +2,10 @@ package mw.optimum.view
 
 import scalafx.scene.shape.Line
 
-object Link {
-  def apply(start: Vector, weight: Int, end: Vector) = new Line {
-    startX = start.x
-    startY = start.y
-    endX = end.x
-    endY = end.y
-    strokeWidth = math.min(weight, 60)
-  }
+case class Link(start: Bubble, weight: Int, end: Bubble) extends Line {
+  startX = start.centerX.toDouble
+  startY = start.centerY.toDouble
+  endX = end.centerX.toDouble
+  endY = end.centerY.toDouble
+  strokeWidth = math.min(weight, 60)
 }

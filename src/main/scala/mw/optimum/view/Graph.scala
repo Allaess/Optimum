@@ -2,6 +2,8 @@ package mw.optimum.view
 
 import mw.optimum.model.{Company, Squad, Tribe}
 
+import scala.util.Try
+
 case class Graph(company: Company, maxTribeSize: Int, positions: Map[Tribe, Vector]) {
   val mostCoupled = company.mostCoupled(maxTribeSize)
   def layout: Graph = {
@@ -105,8 +107,8 @@ case class Graph(company: Company, maxTribeSize: Int, positions: Map[Tribe, Vect
   } else {
     val angle = math.toRadians((index - 18) * 20)
     position(tribe) + Vector(math.cos(angle) * 300, math.sin(angle) * 300)
-  }).headOption.getOrElse(Vector.random)
-  def bubbles = {
+  }).head
+  lazy val bubbles = {
     val tribes = for (tribe <- company.tribes if tribe.size > 0) yield Bubble(tribe, position(tribe))
     val squads = for {
       tribe <- company.tribes if tribe.size > 1
@@ -114,14 +116,28 @@ case class Graph(company: Company, maxTribeSize: Int, positions: Map[Tribe, Vect
     } yield Bubble(squad, position(squad))
     squads ++ tribes
   }
-  def links = {
-    val tribes = for ((tribe1, weight, tribe2) <- mostCoupled) yield Link(position(tribe1), weight, position(tribe2))
+  lazy val links = {
+    val tribes = for ((tribe1, weight, tribe2) <- mostCoupled) yield Link(bubble(tribe1), weight, bubble(tribe2))
     val squads = for {
       tribe <- company.tribes if tribe.size > 1
       squad <- tribe.squads
-    } yield Link(position(tribe), 1, position(squad))
+    } yield Link(bubble(tribe), 1, bubble(squad))
     squads ++ tribes
   }
+  lazy val tribeToBubble = {
+    for {
+      bubble <- bubbles
+      tribe <- bubble.tribe
+    } yield tribe -> bubble
+  }.toMap
+  lazy val squadToBubble = {
+    for {
+      bubble <- bubbles
+      squad <- bubble.squad
+    } yield squad -> bubble
+  }.toMap
+  def bubble(tribe: Tribe): Bubble = tribeToBubble(tribe)
+  def bubble(squad: Squad): Bubble = squadToBubble(squad)
 }
 object Graph {
   val empty = Graph(Company.empty, 7)
@@ -130,11 +146,10 @@ object Graph {
     Graph(company, maxTribeSize, positions.toMap).layout.translate
   }
   def apply(company: Company, maxTribeSize: Int, previousGraph: Graph): Graph = {
-    val positions = for (tribe <- company.tribes) yield {
-      if (tribe.size == 1) tribe -> previousGraph.position(tribe.squads.head)
-      else tribe -> previousGraph.positions.getOrElse(tribe, Vector.average(tribe.squads.map(previousGraph.position))
-      )
+    val positions = for (tribe <- company.tribes) yield previousGraph.positions.get(tribe) match {
+      case Some(position) => tribe -> position
+      case None => tribe -> Try(previousGraph.position(tribe.squads.head)).getOrElse(Vector.random)
     }
-    Graph(company, maxTribeSize, previousGraph.positions ++ positions.toMap).layout.translate
+    Graph(company, maxTribeSize, positions.toMap).layout.translate
   }
 }

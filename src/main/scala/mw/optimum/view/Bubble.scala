@@ -10,6 +10,8 @@ import scalafx.scene.text.Text
 abstract class Bubble(position: Vector) extends StackPane {
   def label: String
   def color: Color
+  def tribe: Option[Tribe]
+  def squad: Option[Squad]
   val circle = new Circle {
     radius = 30
     fill = color
@@ -26,19 +28,22 @@ abstract class Bubble(position: Vector) extends StackPane {
   def format(label: String) = if (label.length > 16) label.take(15) + "..." else label
 }
 object Bubble {
-  def apply(tribe: Tribe, position: Vector): Bubble = if (tribe.size == 1) new Bubble(position) {
-    def label = tribe.squads.head.name
-    def color = Green
-    userData = tribe
+  def apply(_tribe: Tribe, position: Vector): Bubble = if (_tribe.size == 1) new Bubble(position) {
+    def label = _tribe.squads.head.name
+    def color = LightGreen
+    def tribe = Some(_tribe)
+    def squad = Some(_tribe.squads.head)
   }
   else new Bubble(position) {
-    def label = tribe.name
+    def label = _tribe.name
     def color = Yellow
-    userData = tribe
+    def tribe = Some(_tribe)
+    def squad = None
   }
-  def apply(squad: Squad, position: Vector): Bubble = new Bubble(position) {
-    def label = squad.name
+  def apply(_squad: Squad, position: Vector): Bubble = new Bubble(position) {
+    def label = _squad.name
     def color = Cyan
-    userData = squad
+    def tribe = None
+    def squad = Some(_squad)
   }
 }
