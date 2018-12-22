@@ -17,4 +17,3 @@ object Squad {
     def +=(pair: (Squad, Int)) = weights += pair
   }
 }
-

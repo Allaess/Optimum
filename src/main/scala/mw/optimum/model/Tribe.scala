@@ -6,7 +6,7 @@ trait Tribe {
   def contains(squad: Squad) = squads.contains(squad)
   def ++(that: Tribe) = Tribe(name, this.squads ++ that.squads)
   def squad(name: String) = squads.find(_.name == name)
-  def size = squads.size
+  lazy val size = squads.size
   def <->(that: Tribe) = {
     val weights = for {
       thisSquad <- this.squads
@@ -14,7 +14,7 @@ trait Tribe {
     } yield thisSquad <-> thatSquad
     weights.sum
   }
-  override def toString = s"Tribe($name)"
+  override def toString = s"Tribe($name, $size squads)"
   override def equals(obj: Any) = obj match {
     case that: Tribe => this.name == that.name
     case _ => false
