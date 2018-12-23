@@ -31,20 +31,20 @@ object Bubble {
 	val wrapping = 50
 	def apply(tribe: Tribe, position: Vector): Bubble =
 		if (tribe.size == 1) new Bubble {
-			def centerX = position.x
-			def centerY = position.y
-			def label = tribe.squads.head.name
-			def color = LightGreen
+			lazy val centerX = position.x
+			lazy val centerY = position.y
+			lazy val label = tribe.squads.head.name
+			lazy val color = LightGreen
 		} else new Bubble {
-			def centerX = position.x
-			def centerY = position.y
-			def label = tribe.name
-			def color = Yellow
+			lazy val centerX = position.x
+			lazy val centerY = position.y
+			lazy val label = tribe.name
+			lazy val color = Yellow
 		}
 	def apply(squad: Squad, position: Vector): Bubble = new Bubble {
-		def centerX = position.x
-		def centerY = position.y
-		def label = squad.name
-		def color = Cyan
+		lazy val centerX = position.x
+		lazy val centerY = position.y
+		lazy val label = squad.name
+		lazy val color = Cyan
 	}
 }

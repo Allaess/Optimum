@@ -52,7 +52,7 @@ trait Company {
 	def +(tribe: Tribe) = Company(tribe :: tribes)
 	def -(tribe: Tribe) = Company(tribes.filter(_ != tribe))
 	def merge(tribe1: Tribe, tribe2: Tribe) = {
-		val newTribe = tribe1 ++ tribe2
+		val newTribe = if (tribe1.size > tribe2.size) tribe1 ++ tribe2 else tribe2 ++ tribe1
 		this - tribe1 - tribe2 + newTribe
 	}
 	override def toString = s"Company(${tribes.size} tribes)"

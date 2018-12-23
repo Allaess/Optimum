@@ -19,7 +19,18 @@ object Optimum extends JFXApp {
 	def loadScoreText = s"     Start score: $loadScore     "
 	def currentScoreText = s"CurrentScore: ${company.score}     "
 	def bestScoreText = s"Best score: $bestScore     "
-	def dependenciesText = s"DependenciesCount: ${nextCouple.map(_._2).getOrElse(0)}     "
+	def dependenciesText = nextCouple match {
+		case Some((tribe1, weight, tribe2)) =>
+			val prefix = if (weight == 1) "1 dependency" else s"$weight dependencies"
+			val postfix = (tribe1.size, tribe2.size) match {
+				case (1, 1) => s"${tribe1.squads.head.name} and ${tribe2.squads.head.name}"
+				case (1, _) => s"${tribe1.squads.head.name} and ${tribe2.name}"
+				case (_, 1) => s"${tribe1.name} and ${tribe2.squads.head.name}"
+				case _ => s"${tribe1.name} and ${tribe2.name}"
+			}
+			s"$prefix between $postfix     "
+		case None => "No dependencies     "
+	}
 	stage = new PrimaryStage {
 		title = "Optimum"
 		scene = new Scene {
@@ -110,8 +121,22 @@ object Optimum extends JFXApp {
 							}
 						}
 					}
+					val zoomInButton = new Button {
+						text = "Zoom in"
+						onAction = { _ =>
+							graphPane.scaleX = graphPane.scaleX() / 0.75
+							graphPane.scaleY = graphPane.scaleY() / 0.75
+						}
+					}
+					val zoomOutButton = new Button {
+						text = "Zoom out"
+						onAction = { _ =>
+							graphPane.scaleX = graphPane.scaleX() * 0.75
+							graphPane.scaleY = graphPane.scaleY() * 0.75
+						}
+					}
 					children = loadButton :: undoButton :: redoButton :: dropButton :: nextButton ::
-						lessSquadsButton :: sizeField :: moreSquadsButton ::
+						lessSquadsButton :: sizeField :: moreSquadsButton :: zoomInButton :: zoomOutButton ::
 						loadScoreField :: currentScoreField :: bestScoreField :: dependenciesCount :: Nil
 					def refresh(): Unit = {
 						val (next, best) = company.nextCoupleAndBestScore(maxTribeSize)
