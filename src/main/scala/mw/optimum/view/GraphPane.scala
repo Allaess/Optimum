@@ -21,35 +21,58 @@ class GraphPane extends Pane {
 			squad <- tribe.squads
 		} yield squad -> Bubble(squad, graph.position(squad), tribe, maxTribeSize)
 	}.toMap
-	def prefTribeLink(graph: Graph, maxTribeSize: Int, bubbles: Map[Tribe, Bubble]) =
-		graph.company.nextCoupleAndBestScore(maxTribeSize)._1.map { case (tribe1, weight, tribe2) =>
-			(tribe1, tribe2) -> Link(bubbles(tribe1), bubbles(tribe2), normalize(weight), Red)
+	def prefTribeLink(graph: Graph, maxTribeSize: Int, bubbles: Map[Tribe, Bubble]) = {
+		val (nextCouple, _) = graph.company.nextCoupleAndBestScore(maxTribeSize)
+		nextCouple.map { case (tribe1, weight, tribe2) =>
+			(tribe1, tribe2) -> (weight, Link(bubbles(tribe1), bubbles(tribe2), normalize(weight), Red))
 		}
+	}
 	def tribeLinks(graph: Graph, maxTribeSize: Int, bubbles: Map[Tribe, Bubble]) =
 		graph.company.mostCoupled(maxTribeSize).map { case (tribe1, weight, tribe2) =>
-			(tribe1, tribe2) -> Link(bubbles(tribe1), bubbles(tribe2), normalize(weight), Grey)
+			(tribe1, tribe2) -> (weight, Link(bubbles(tribe1), bubbles(tribe2), normalize(weight), Cyan))
 		}.toMap
 	def squadLinks(graph: Graph, tribeBubbles: Map[Tribe, Bubble], squadBubbles: Map[Squad, Bubble]) = {
 		for {
 			tribe <- graph.company.tribes if tribe.size > 1
 			squad <- tribe.squads
-		} yield (squad, tribe) -> Link(tribeBubbles(tribe), squadBubbles(squad), normalize(tribe <-> squad))
+			weight = tribe <-> squad
+		} yield (squad, tribe) -> (weight, Link(tribeBubbles(tribe), squadBubbles(squad), normalize(weight)))
+	}.toMap
+	def ignoredLinks(graph: Graph, cutWeight: Int, bubbles: Map[Tribe, Bubble]) = {
+		for ((tribe1, weight, tribe2) <- graph.company.ignored(cutWeight)) yield
+			(tribe1, tribe2) -> (weight, Link(bubbles(tribe1), bubbles(tribe2), normalize(weight), LightGrey))
 	}.toMap
 	def show(graph: Graph, maxTribeSize: Int) = {
-		val weights = for {
-			tribe <- graph.company.tribes if tribe.size > 1
-			squad <- tribe.squads
-		} yield tribe <-> squad
-		val weight = graph.company.mostCoupled(maxTribeSize).headOption.map(_._2).getOrElse(0)
-		maxWeight = Try((weight :: weights).max).getOrElse(0)
+		val tBubbles = tribeBubbles(graph, maxTribeSize)
+		val sBubbles = squadBubbles(graph, maxTribeSize)
+		val pLink = prefTribeLink(graph, maxTribeSize, tBubbles)
+		val pWeight = pLink.map(_._2._1)
+		val tLinks = tribeLinks(graph, maxTribeSize, tBubbles)
+		val sLinks = squadLinks(graph, tBubbles, sBubbles)
+		val iLinks = {
+			for {
+				w <- pWeight.toList
+				link <- ignoredLinks(graph, w, tBubbles)
+			} yield link
+		}.toMap
+		val weights = (iLinks.values ++ sLinks.values ++ tLinks.values ++ pLink.map(_._2)).map(_._1)
+		maxWeight = Try(weights.max).getOrElse(0)
 		animate(this.graph, graph, maxTribeSize) {
 			this.graph = graph
 			val tBubbles = tribeBubbles(graph, maxTribeSize)
 			val sBubbles = squadBubbles(graph, maxTribeSize)
 			val pLink = prefTribeLink(graph, maxTribeSize, tBubbles)
+			val pWeight = pLink.map(_._2._1)
 			val tLinks = tribeLinks(graph, maxTribeSize, tBubbles)
 			val sLinks = squadLinks(graph, tBubbles, sBubbles)
-			children = sLinks.values ++ tLinks.values ++ pLink.map(_._2) ++ sBubbles.values ++ tBubbles.values
+			val iLinks = {
+				for {
+					w <- pWeight.toList
+					link <- ignoredLinks(graph, w, tBubbles)
+				} yield link
+			}.toMap
+			children = (iLinks.values ++ sLinks.values ++ tLinks.values ++ pLink.map(_._2)).map(_._2) ++
+				sBubbles.values ++ tBubbles.values
 		}
 	}
 	def show(company: Company, maxTribeSize: Int): Unit = show(Graph(company, this.graph), maxTribeSize)

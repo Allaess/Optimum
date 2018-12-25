@@ -34,6 +34,13 @@ trait Company {
 			if weight == maxWeight && tribe1.size + tribe2.size <= maxTribeSize
 		} yield (tribe1, weight, tribe2)
 	}
+	def ignored(cutWeight: Int) = for {
+		tribe1 <- tribes
+		tribe2 <- tribes
+		if tribe1.name < tribe2.name
+		weight = tribe1 <-> tribe2
+		if weight > cutWeight
+	} yield (tribe1, weight, tribe2)
 	lazy val score = {
 		val weights = for {
 			tribe1 <- tribes
