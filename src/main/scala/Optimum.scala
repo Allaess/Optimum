@@ -14,6 +14,7 @@ object Optimum extends JFXApp {
 	var loadScore = 0
 	var undoStack = List.empty[Company]
 	var redoStack = List.empty[Company]
+	var scale = 1.0
 	val graphPane = GraphPane()
 	def name(tribe: Tribe) = if (tribe.name.startsWith("Tribe")) {
 		if (tribe.size == 1) s"${tribe.squads.head.name}"
@@ -25,10 +26,10 @@ object Optimum extends JFXApp {
 			s"${tribe.name} (${sorted.mkString(",")})"
 		}
 	} else tribe.name
-	def sizeText = s" Max squads par tribe: $maxTribeSize "
-	def loadScoreText = s"     Start score: $loadScore     "
-	def currentScoreText = s"CurrentScore: ${company.score}     "
-	def bestScoreText = s"Best score: $bestScore     "
+	def sizeText = s" $maxTribeSize squads par tribe "
+	def loadScoreText = s"     Start: $loadScore     "
+	def currentScoreText = s"Current: ${company.score}     "
+	def bestScoreText = s"Best: $bestScore     "
 	def dependenciesText = nextCouple match {
 		case Some((tribe1, weight, tribe2)) =>
 			val prefix = if (weight == 1) "1 dependency" else s"$weight dependencies"
@@ -129,15 +130,21 @@ object Optimum extends JFXApp {
 					val zoomInButton = new Button {
 						text = "Zoom in"
 						onAction = { _ =>
-							graphPane.scaleX = graphPane.scaleX() / 0.75
-							graphPane.scaleY = graphPane.scaleY() / 0.75
+							scale /= 0.75
+							graphPane.scaleX = scale
+							graphPane.scaleY = scale
+							graphPane.translateX = graphPane.width() * (scale - 1) / 2
+							graphPane.translateY = graphPane.height() * (scale - 1) / 2
 						}
 					}
 					val zoomOutButton = new Button {
 						text = "Zoom out"
 						onAction = { _ =>
-							graphPane.scaleX = graphPane.scaleX() * 0.75
-							graphPane.scaleY = graphPane.scaleY() * 0.75
+							scale *= 0.75
+							graphPane.scaleX = scale
+							graphPane.scaleY = scale
+							graphPane.translateX = graphPane.width() * (scale - 1) / 2
+							graphPane.translateY = graphPane.height() * (scale - 1) / 2
 						}
 					}
 					children = loadButton :: undoButton :: redoButton :: dropButton :: nextButton ::

@@ -12,14 +12,14 @@ class GraphPane extends Pane {
 	private var graph = Graph.empty
 	private var maxWeight = 1
 	def normalize(weight: Int) = if (maxWeight > 80) weight * 80.0 / maxWeight else weight.toDouble
-	def tribeBubbles(graph: Graph) = {
-		for (tribe <- graph.company.tribes) yield tribe -> Bubble(tribe, graph.position(tribe))
+	def tribeBubbles(graph: Graph, maxTribeSize: Int) = {
+		for (tribe <- graph.company.tribes) yield tribe -> Bubble(tribe, graph.position(tribe), maxTribeSize)
 	}.toMap
-	def squadBubbles(graph: Graph) = {
+	def squadBubbles(graph: Graph, maxTribeSize: Int) = {
 		for {
 			tribe <- graph.company.tribes
 			squad <- tribe.squads
-		} yield squad -> Bubble(squad, graph.position(squad))
+		} yield squad -> Bubble(squad, graph.position(squad), tribe, maxTribeSize)
 	}.toMap
 	def prefTribeLink(graph: Graph, maxTribeSize: Int, bubbles: Map[Tribe, Bubble]) =
 		graph.company.nextCoupleAndBestScore(maxTribeSize)._1.map { case (tribe1, weight, tribe2) =>
@@ -44,8 +44,8 @@ class GraphPane extends Pane {
 		maxWeight = Try((weight :: weights).max).getOrElse(0)
 		animate(this.graph, graph, maxTribeSize) {
 			this.graph = graph
-			val tBubbles = tribeBubbles(graph)
-			val sBubbles = squadBubbles(graph)
+			val tBubbles = tribeBubbles(graph, maxTribeSize)
+			val sBubbles = squadBubbles(graph, maxTribeSize)
 			val pLink = prefTribeLink(graph, maxTribeSize, tBubbles)
 			val tLinks = tribeLinks(graph, maxTribeSize, tBubbles)
 			val sLinks = squadLinks(graph, tBubbles, sBubbles)
@@ -54,10 +54,10 @@ class GraphPane extends Pane {
 	}
 	def show(company: Company, maxTribeSize: Int): Unit = show(Graph(company, this.graph), maxTribeSize)
 	def animate(fromGraph: Graph, toGraph: Graph, maxTribeSize: Int)(action: => Any) = {
-		val fromTribeBubble = tribeBubbles(fromGraph)
-		val toTribeBubble = tribeBubbles(toGraph)
-		val fromSquadBubble = squadBubbles(fromGraph)
-		val toSquadBubble = squadBubbles(toGraph)
+		val fromTribeBubble = tribeBubbles(fromGraph, maxTribeSize)
+		val toTribeBubble = tribeBubbles(toGraph, maxTribeSize)
+		val fromSquadBubble = squadBubbles(fromGraph, maxTribeSize)
+		val toSquadBubble = squadBubbles(toGraph, maxTribeSize)
 		val step = Duration(2000)
 		val fromTribes = fromGraph.company.tribes.filter(_.size > 1).toSet
 		val toTribes = toGraph.company.tribes.filter(_.size > 1).toSet

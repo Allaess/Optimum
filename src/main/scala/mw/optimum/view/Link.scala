@@ -9,7 +9,7 @@ class Link(bubble1: Bubble, bubble2: Bubble, weight: Double, color: Color) exten
 	startY = bubble1.centerY
 	endX = bubble2.centerX
 	endY = bubble2.centerY
-	strokeWidth = weight
+	strokeWidth = math.max(weight,1)
 	stroke = color
 }
 object Link {

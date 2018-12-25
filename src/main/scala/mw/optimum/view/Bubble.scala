@@ -29,22 +29,34 @@ trait Bubble extends StackPane {
 object Bubble {
 	val radius = 40
 	val wrapping = 50
-	def apply(tribe: Tribe, position: Vector): Bubble =
+	def apply(tribe: Tribe, position: Vector, maxTribeSize: Int): Bubble =
 		if (tribe.size == 1) new Bubble {
 			lazy val centerX = position.x
 			lazy val centerY = position.y
 			lazy val label = tribe.squads.head.name
 			lazy val color = LightGreen
+		} else if (tribe.size >= maxTribeSize) new Bubble {
+			lazy val centerX = position.x
+			lazy val centerY = position.y
+			lazy val label = tribe.name
+			lazy val color = LightGray
 		} else new Bubble {
 			lazy val centerX = position.x
 			lazy val centerY = position.y
 			lazy val label = tribe.name
 			lazy val color = Yellow
 		}
-	def apply(squad: Squad, position: Vector): Bubble = new Bubble {
-		lazy val centerX = position.x
-		lazy val centerY = position.y
-		lazy val label = squad.name
-		lazy val color = Cyan
-	}
+	def apply(squad: Squad, position: Vector, tribe: Tribe, maxTribeSize: Int): Bubble =
+		if (tribe.size >= maxTribeSize) new Bubble {
+			lazy val centerX = position.x
+			lazy val centerY = position.y
+			lazy val label = squad.name
+			lazy val color = LightGray
+		}
+		else new Bubble {
+			lazy val centerX = position.x
+			lazy val centerY = position.y
+			lazy val label = squad.name
+			lazy val color = Cyan
+		}
 }
