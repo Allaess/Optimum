@@ -49,15 +49,10 @@ trait GraphPane extends Pane {
 		val tBubbles = tribeBubbles(graph, maxTribeSize)
 		val sBubbles = squadBubbles(graph, maxTribeSize)
 		val pLink = prefTribeLink(graph, maxTribeSize, tBubbles)
-		val pWeight = pLink.map(_._2._1)
+		val pWeight = pLink.map(_._2._1).getOrElse(0)
 		val tLinks = tribeLinks(graph, maxTribeSize, tBubbles)
 		val sLinks = squadLinks(graph, tBubbles, sBubbles)
-		val iLinks = {
-			for {
-				w <- pWeight.toList
-				link <- ignoredLinks(graph, w, tBubbles)
-			} yield link
-		}.toMap
+		val iLinks = ignoredLinks(graph, pWeight, tBubbles)
 		val weights = (iLinks.values ++ sLinks.values ++ tLinks.values ++ pLink.map(_._2)).map(_._1)
 		maxWeight = Try(weights.max).getOrElse(0)
 		animate(this.graph, graph, maxTribeSize) {
@@ -65,15 +60,10 @@ trait GraphPane extends Pane {
 			val tBubbles = tribeBubbles(graph, maxTribeSize)
 			val sBubbles = squadBubbles(graph, maxTribeSize)
 			val pLink = prefTribeLink(graph, maxTribeSize, tBubbles)
-			val pWeight = pLink.map(_._2._1)
+			val pWeight = pLink.map(_._2._1).getOrElse(0)
 			val tLinks = tribeLinks(graph, maxTribeSize, tBubbles)
 			val sLinks = squadLinks(graph, tBubbles, sBubbles)
-			val iLinks = {
-				for {
-					w <- pWeight.toList
-					link <- ignoredLinks(graph, w, tBubbles)
-				} yield link
-			}.toMap
+			val iLinks = ignoredLinks(graph, pWeight, tBubbles)
 			children = (iLinks.values ++ sLinks.values ++ tLinks.values ++ pLink.map(_._2)).map(_._2) ++
 				sBubbles.values ++ tBubbles.values
 		}
@@ -84,7 +74,7 @@ trait GraphPane extends Pane {
 		val toTribeBubble = tribeBubbles(toGraph, maxTribeSize)
 		val fromSquadBubble = squadBubbles(fromGraph, maxTribeSize)
 		val toSquadBubble = squadBubbles(toGraph, maxTribeSize)
-		val step = Duration(2000)
+		val step = Duration(500)
 		val fromTribes = fromGraph.company.tribes.filter(_.size > 1).toSet
 		val toTribes = toGraph.company.tribes.filter(_.size > 1).toSet
 		val fromSquads = {
