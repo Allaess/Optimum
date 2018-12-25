@@ -8,18 +8,19 @@ import scalafx.scene.paint.Color._
 import scalafx.util.Duration
 import scala.util.Try
 
-class GraphPane extends Pane {
+trait GraphPane extends Pane {
 	private var graph = Graph.empty
 	private var maxWeight = 1
+	def dragged(from: Tribe, to: Tribe)
 	def normalize(weight: Int) = if (maxWeight > 80) weight * 80.0 / maxWeight else weight.toDouble
 	def tribeBubbles(graph: Graph, maxTribeSize: Int) = {
-		for (tribe <- graph.company.tribes) yield tribe -> Bubble(tribe, graph.position(tribe), maxTribeSize)
+		for (tribe <- graph.company.tribes) yield tribe -> Bubble(tribe, graph.position(tribe), maxTribeSize, merge)
 	}.toMap
 	def squadBubbles(graph: Graph, maxTribeSize: Int) = {
 		for {
 			tribe <- graph.company.tribes
 			squad <- tribe.squads
-		} yield squad -> Bubble(squad, graph.position(squad), tribe, maxTribeSize)
+		} yield squad -> Bubble(squad, graph.position(squad), tribe, maxTribeSize, merge)
 	}.toMap
 	def prefTribeLink(graph: Graph, maxTribeSize: Int, bubbles: Map[Tribe, Bubble]) = {
 		val (nextCouple, _) = graph.company.nextCoupleAndBestScore(maxTribeSize)
@@ -42,6 +43,8 @@ class GraphPane extends Pane {
 		for ((tribe1, weight, tribe2) <- graph.company.ignored(cutWeight)) yield
 			(tribe1, tribe2) -> (weight, Link(bubbles(tribe1), bubbles(tribe2), normalize(weight), LightGrey))
 	}.toMap
+	def merge(from: String, to: Tribe) = for (tribe <- graph.company.tribes.find(_.name == from))
+		dragged(tribe, to)
 	def show(graph: Graph, maxTribeSize: Int) = {
 		val tBubbles = tribeBubbles(graph, maxTribeSize)
 		val sBubbles = squadBubbles(graph, maxTribeSize)
@@ -168,5 +171,7 @@ class GraphPane extends Pane {
 	}
 }
 object GraphPane {
-	def apply() = new GraphPane
+	def apply(action: (Tribe, Tribe) => Any) = new GraphPane {
+		def dragged(from: Tribe, to: Tribe) = action(from, to)
+	}
 }
