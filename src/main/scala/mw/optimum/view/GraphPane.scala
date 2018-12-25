@@ -2,7 +2,7 @@ package mw.optimum.view
 
 import mw.optimum.graph.Graph
 import mw.optimum.model.{Company, Squad, Tribe}
-import scalafx.animation.{FadeTransition, FillTransition, ParallelTransition, TranslateTransition}
+import scalafx.animation._
 import scalafx.scene.layout.Pane
 import scalafx.scene.paint.Color._
 import scalafx.util.Duration
@@ -23,17 +23,18 @@ class GraphPane extends Pane {
 	}.toMap
 	def prefTribeLink(graph: Graph, maxTribeSize: Int, bubbles: Map[Tribe, Bubble]) =
 		graph.company.nextCoupleAndBestScore(maxTribeSize)._1.map { case (tribe1, weight, tribe2) =>
-			Link(bubbles(tribe1), bubbles(tribe2), normalize(weight), Red)
+			(tribe1, tribe2) -> Link(bubbles(tribe1), bubbles(tribe2), normalize(weight), Red)
 		}
 	def tribeLinks(graph: Graph, maxTribeSize: Int, bubbles: Map[Tribe, Bubble]) =
 		graph.company.mostCoupled(maxTribeSize).map { case (tribe1, weight, tribe2) =>
-			Link(bubbles(tribe1), bubbles(tribe2), normalize(weight), Grey)
-		}
-	def squadLinks(graph: Graph, tribeBubbles: Map[Tribe, Bubble], squadBubbles: Map[Squad, Bubble]) =
+			(tribe1, tribe2) -> Link(bubbles(tribe1), bubbles(tribe2), normalize(weight), Grey)
+		}.toMap
+	def squadLinks(graph: Graph, tribeBubbles: Map[Tribe, Bubble], squadBubbles: Map[Squad, Bubble]) = {
 		for {
 			tribe <- graph.company.tribes if tribe.size > 1
 			squad <- tribe.squads
-		} yield Link(tribeBubbles(tribe), squadBubbles(squad), normalize(tribe <-> squad))
+		} yield (squad, tribe) -> Link(tribeBubbles(tribe), squadBubbles(squad), normalize(tribe <-> squad))
+	}.toMap
 	def show(graph: Graph, maxTribeSize: Int) = {
 		val weights = for {
 			tribe <- graph.company.tribes if tribe.size > 1
@@ -46,9 +47,9 @@ class GraphPane extends Pane {
 			val tBubbles = tribeBubbles(graph)
 			val sBubbles = squadBubbles(graph)
 			val pLink = prefTribeLink(graph, maxTribeSize, tBubbles)
-			val tLinks = tribeLinks(graph, maxTribeSize, tBubbles).filter(!pLink.contains(_))
+			val tLinks = tribeLinks(graph, maxTribeSize, tBubbles)
 			val sLinks = squadLinks(graph, tBubbles, sBubbles)
-			children = sLinks ++ tLinks ++ pLink ++ sBubbles.values ++ tBubbles.values
+			children = sLinks.values ++ tLinks.values ++ pLink.map(_._2) ++ sBubbles.values ++ tBubbles.values
 		}
 	}
 	def show(company: Company, maxTribeSize: Int): Unit = show(Graph(company, this.graph), maxTribeSize)
@@ -103,13 +104,13 @@ class GraphPane extends Pane {
 		val addedBubbles = addedTribeBubbles.values ++ addedSquadBubbles.values
 		val keptBubbles = keptTribeBubbles.values ++ keptSquadBubbles.values
 		val deletedBubbles = deletedTribeBubbles.values ++ deletedSquadBubbles.values
-		val fadeIns = for (bubble <- addedBubbles) yield new FadeTransition {
+		val fadeInBubbles = for (bubble <- addedBubbles) yield new FadeTransition {
 			node = bubble
 			duration = step
 			fromValue = 0
 			toValue = 1
 		}
-		val moves = for {
+		val moveBubbles = for {
 			(fromBubble, toBubble) <- keptBubbles
 			if fromBubble.centerX != toBubble.centerX || fromBubble.centerY != toBubble.centerY
 		} yield new TranslateTransition {
@@ -118,7 +119,7 @@ class GraphPane extends Pane {
 			byX = toBubble.centerX - fromBubble.centerX
 			byY = toBubble.centerY - fromBubble.centerY
 		}
-		val recolors = for {
+		val recolorBubbles = for {
 			(fromBubble, toBubble) <- keptBubbles
 			if fromBubble.color != toBubble.color
 		} yield new FillTransition {
@@ -127,7 +128,7 @@ class GraphPane extends Pane {
 			fromValue = fromBubble.color
 			toValue = toBubble.color
 		}
-		val fadeOuts = for (bubble <- deletedBubbles) yield new FadeTransition {
+		val fadeOutBubbles = for (bubble <- deletedBubbles) yield new FadeTransition {
 			node = bubble
 			duration = step
 			fromValue = 1
@@ -135,7 +136,7 @@ class GraphPane extends Pane {
 		}
 		children = addedBubbles ++ keptBubbles.map(_._1) ++ deletedBubbles
 		val animation = new ParallelTransition {
-			children = fadeIns ++ moves ++ recolors ++ fadeOuts
+			children = fadeInBubbles ++ moveBubbles ++ recolorBubbles ++ fadeOutBubbles
 			onFinished = { _ =>
 				action
 			}

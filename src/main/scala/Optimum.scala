@@ -1,4 +1,4 @@
-import mw.optimum.model.Company
+import mw.optimum.model.{Company, Tribe}
 import mw.optimum.view.GraphPane
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
@@ -15,6 +15,16 @@ object Optimum extends JFXApp {
 	var undoStack = List.empty[Company]
 	var redoStack = List.empty[Company]
 	val graphPane = GraphPane()
+	def name(tribe: Tribe) = if (tribe.name.startsWith("Tribe")) {
+		if (tribe.size == 1) s"${tribe.squads.head.name}"
+		else {
+			val prefixes = tribe.squads.map(_.name.take(3)).distinct
+			val sorted = prefixes.sortBy { prefix =>
+				prefixes.count(_ == prefix)
+			}.reverse
+			s"${tribe.name} (${sorted.mkString(",")})"
+		}
+	} else tribe.name
 	def sizeText = s" Max squads par tribe: $maxTribeSize "
 	def loadScoreText = s"     Start score: $loadScore     "
 	def currentScoreText = s"CurrentScore: ${company.score}     "
@@ -22,12 +32,7 @@ object Optimum extends JFXApp {
 	def dependenciesText = nextCouple match {
 		case Some((tribe1, weight, tribe2)) =>
 			val prefix = if (weight == 1) "1 dependency" else s"$weight dependencies"
-			val postfix = (tribe1.size, tribe2.size) match {
-				case (1, 1) => s"${tribe1.squads.head.name} and ${tribe2.squads.head.name}"
-				case (1, _) => s"${tribe1.squads.head.name} and ${tribe2.name}"
-				case (_, 1) => s"${tribe1.name} and ${tribe2.squads.head.name}"
-				case _ => s"${tribe1.name} and ${tribe2.name}"
-			}
+			val postfix = s"${name(tribe1)} and ${name(tribe2)}"
 			s"$prefix between $postfix     "
 		case None => "No dependencies     "
 	}
