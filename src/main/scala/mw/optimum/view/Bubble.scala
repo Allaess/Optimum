@@ -14,6 +14,7 @@ trait Bubble extends StackPane {
 	def centerY: Double
 	def label: String
 	def color: Color
+	def tribe: Tribe
 	def merge(from: String)
 	private def format(text: String) = if (text.length > 16) text.take(15) + "..." else text
 	val circle = new Circle {
@@ -30,22 +31,22 @@ trait Bubble extends StackPane {
 	onDragDetected = { event =>
 		val buffer = startDragAndDrop(TransferMode.Move)
 		val content = new ClipboardContent
-		content.putString(label)
+		content.putString(tribe.name)
 		buffer.setContent(content)
 		event.consume()
 	}
 	onDragOver = { event =>
-		if (event.getGestureSource != this && event.getDragboard.hasString)
+		if (event.getDragboard.hasString && event.getDragboard.getString!=tribe.name)
 			event.acceptTransferModes(TransferMode.Move)
 		event.consume()
 	}
 	onDragEntered = { event =>
-		if (event.getGestureSource != this && event.getDragboard.hasString)
+		if (event.getDragboard.hasString && event.getDragboard.getString!=tribe.name)
 			circle.fill = Green
 		event.consume()
 	}
 	onDragExited = { event =>
-		if (event.getGestureSource != this && event.getDragboard.hasString)
+		if (event.getDragboard.hasString && event.getDragboard.getString!=tribe.name)
 			circle.fill = color
 		event.consume()
 	}
@@ -61,29 +62,33 @@ trait Bubble extends StackPane {
 object Bubble {
 	val radius = 40
 	val wrapping = 50
-	def apply(tribe: Tribe, position: Vector, maxTribeSize: Int, action: (String, Tribe) => Any): Bubble =
-		if (tribe.size == 1) new Bubble {
+	def apply(_tribe: Tribe, position: Vector, maxTribeSize: Int, action: (String, Tribe) => Any): Bubble =
+		if (_tribe.size == 1) new Bubble {
+			lazy val tribe = _tribe
 			lazy val centerX = position.x
 			lazy val centerY = position.y
 			lazy val label = tribe.squads.head.name
 			lazy val color = LightGreen
 			def merge(from: String) = action(from, tribe)
-		} else if (tribe.size >= maxTribeSize) new Bubble {
+		} else if (_tribe.size >= maxTribeSize) new Bubble {
+			lazy val tribe = _tribe
 			lazy val centerX = position.x
 			lazy val centerY = position.y
 			lazy val label = tribe.name
 			lazy val color = LightGray
 			def merge(from: String) = action(from, tribe)
 		} else new Bubble {
+			lazy val tribe = _tribe
 			lazy val centerX = position.x
 			lazy val centerY = position.y
 			lazy val label = tribe.name
 			lazy val color = Yellow
 			def merge(from: String) = action(from, tribe)
 		}
-	def apply(squad: Squad, position: Vector, tribe: Tribe, maxTribeSize: Int, action: (String, Tribe) => Any)
+	def apply(squad: Squad, position: Vector, _tribe: Tribe, maxTribeSize: Int, action: (String, Tribe) => Any)
 	: Bubble =
-		if (tribe.size >= maxTribeSize) new Bubble {
+		if (_tribe.size >= maxTribeSize) new Bubble {
+			lazy val tribe = _tribe
 			lazy val centerX = position.x
 			lazy val centerY = position.y
 			lazy val label = squad.name
@@ -91,6 +96,7 @@ object Bubble {
 			def merge(from: String) = action(from, tribe)
 		}
 		else new Bubble {
+			lazy val tribe = _tribe
 			lazy val centerX = position.x
 			lazy val centerY = position.y
 			lazy val label = squad.name
