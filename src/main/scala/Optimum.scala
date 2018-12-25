@@ -25,7 +25,7 @@ object Optimum extends JFXApp {
 			s"${tribe.name} (${sorted.mkString(",")})"
 		}
 	} else tribe.name
-	def sizeText = s" $maxTribeSize squads par tribe "
+	def sizeText = s" $maxTribeSize squads per tribe "
 	def loadScoreText = s"     Start: $loadScore     "
 	def currentScoreText = s"Current: ${company.score}     "
 	def bestScoreText = s"Best: $bestScore     "
