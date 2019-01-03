@@ -69,6 +69,12 @@ trait Company {
     val newTribe = if (tribe1.size > tribe2.size) tribe1 ++ tribe2 else tribe2 ++ tribe1
     this - tribe1 - tribe2 + newTribe
   }
+  def move(squad: Squad, toTribe: Tribe) = {
+    val fromTribe = tribes.find(_.contains(squad)).get
+    val newFromTribe = fromTribe - squad
+    val newToTribe = toTribe + squad
+    this - fromTribe - toTribe + newFromTribe + newToTribe
+  }
   def saveTo(file: File) = {
     def format(field: String) = {
       if (field.contains(",") || field.contains("\""))

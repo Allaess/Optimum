@@ -1,4 +1,4 @@
-import mw.optimum.model.{Company, Tribe}
+import mw.optimum.model.{Company, Squad, Tribe}
 import mw.optimum.view.GraphPane
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
@@ -15,7 +15,7 @@ object Optimum extends JFXApp {
   var undoStack = List.empty[Company]
   var redoStack = List.empty[Company]
   var scale = 1.0
-  val graphPane = GraphPane(merge)
+  val graphPane = GraphPane(merge, move)
   val sizeField = new Label {
     text = sizeText
   }
@@ -144,6 +144,12 @@ object Optimum extends JFXApp {
   def merge(tribe1: Tribe, tribe2: Tribe) = {
     undoStack ::= company
     company = company.merge(tribe1, tribe2)
+    redoStack = Nil
+    refresh()
+  }
+  def move(squad: Squad, toTribe: Tribe) = {
+    undoStack ::= company
+    company = company.move(squad, toTribe)
     redoStack = Nil
     refresh()
   }
