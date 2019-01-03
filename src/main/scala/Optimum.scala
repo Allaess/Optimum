@@ -111,6 +111,16 @@ object Optimum extends JFXApp {
       }
     }
   }
+  val endButton = new Button {
+    text = "End"
+    disable = true
+    onAction = { _ =>
+      undoStack ::= company
+      company = company.optimum(maxTribeSize)
+      redoStack = Nil
+      refresh()
+    }
+  }
   val zoomInButton = new Button {
     text = "Zoom in"
     onAction = { _ =>
@@ -150,6 +160,7 @@ object Optimum extends JFXApp {
     redoButton.disable = redoStack.isEmpty
     dropButton.disable = !company.tribes.exists(_.size > 1)
     nextButton.disable = nextCouple.isEmpty
+    endButton.disable = nextCouple.isEmpty
     graphPane.show(company, maxTribeSize)
   }
   def name(tribe: Tribe) = if (tribe.name.startsWith("Tribe")) {
@@ -178,7 +189,7 @@ object Optimum extends JFXApp {
     scene = new Scene {
       root = new BorderPane {
         top = new HBox {
-          children = loadButton :: saveButton :: undoButton :: redoButton :: dropButton :: nextButton ::
+          children = loadButton :: saveButton :: undoButton :: redoButton :: dropButton :: nextButton :: endButton ::
             lessSquadsButton :: sizeField :: moreSquadsButton :: zoomInButton :: zoomOutButton :: Nil
         }
         center = new ScrollPane {

@@ -35,6 +35,12 @@ trait Company {
       if weight == maxWeight && tribe1.size + tribe2.size <= maxTribeSize
     } yield (tribe1, weight, tribe2)
   }
+  def optimum(maxTribeSize: Int): Company = mostCoupled(maxTribeSize) match {
+    case Nil => this
+    case (tribe1, _, tribe2) :: _ =>
+      val newCompany = merge(tribe1, tribe2)
+      newCompany.optimum(maxTribeSize)
+  }
   def ignored(cutWeight: Int) = for {
     tribe1 <- tribes
     tribe2 <- tribes
@@ -65,7 +71,8 @@ trait Company {
   }
   def saveTo(file: File) = {
     def format(field: String) = {
-      if (field.contains(",") || field.contains("\"")) s""""${field.replaceAllLiterally("\"", "\"\"")}""""
+      if (field.contains(",") || field.contains("\""))
+        s""""${field.replaceAllLiterally("\"", "\"\"")}""""
       else field
     }
     val output = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file)))
