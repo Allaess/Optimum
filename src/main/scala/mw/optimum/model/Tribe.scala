@@ -7,6 +7,7 @@ trait Tribe {
   def ++(that: Tribe) = Tribe(name, this.squads ++ that.squads)
   def +(squad: Squad) = Tribe(name, squad :: squads)
   def -(squad: Squad) = Tribe(name, squads.filter(_ != squad))
+  def isEmpty = squads.isEmpty
   def squad(name: String) = squads.find(_.name == name)
   lazy val size = squads.size
   def <->(that: Tribe): Int = {

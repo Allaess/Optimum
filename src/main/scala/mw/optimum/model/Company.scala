@@ -73,7 +73,8 @@ trait Company {
     val fromTribe = tribes.find(_.contains(squad)).get
     val newFromTribe = fromTribe - squad
     val newToTribe = toTribe + squad
-    this - fromTribe - toTribe + newFromTribe + newToTribe
+    if (newFromTribe.isEmpty) this - fromTribe - toTribe + newToTribe
+    else this - fromTribe - toTribe + newFromTribe + newToTribe
   }
   def saveTo(file: File) = {
     def format(field: String) = {
