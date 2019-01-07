@@ -76,6 +76,13 @@ trait Company {
     if (newFromTribe.isEmpty) this - fromTribe - toTribe + newToTribe
     else this - fromTribe - toTribe + newFromTribe + newToTribe
   }
+  def split(squad: Squad) = {
+    val fromTribe = tribes.find(_.contains(squad)).get
+    val newFromTribe = fromTribe - squad
+    val newToTribe = Tribe() + squad
+    if (newFromTribe.isEmpty) this - fromTribe + newToTribe
+    else this - fromTribe + newFromTribe + newToTribe
+  }
   def saveTo(file: File) = {
     def format(field: String) = {
       if (field.contains(",") || field.contains("\""))

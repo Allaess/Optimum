@@ -1,18 +1,19 @@
 package mw.optimum.view
 
-import mw.optimum.graph.Graph
+import mw.optimum.graph.{Graph, Vector}
 import mw.optimum.model.{Company, Squad, Tribe}
 import scalafx.animation._
+import scalafx.scene.input.TransferMode
 import scalafx.scene.layout.Pane
 import scalafx.scene.paint.Color._
 import scalafx.util.Duration
+
 import scala.util.Try
 
 trait GraphPane extends Pane {
   private var graph = Graph.empty
   private var maxWeight = 1
-  def dragged(from: Tribe, to: Tribe)
-  def dragged(from: Squad, to: Tribe)
+  private var maxTribeSize = 0
   def normalize(weight: Int) = if (maxWeight > 80) weight * 80.0 / maxWeight else weight.toDouble
   def tribeBubbles(graph: Graph, maxTribeSize: Int) = {
     for (tribe <- graph.company.tribes) yield tribe -> Bubble(tribe, graph.position(tribe), maxTribeSize, merge, move)
@@ -23,6 +24,19 @@ trait GraphPane extends Pane {
       squad <- tribe.squads
     } yield squad -> Bubble(squad, graph.position(squad), tribe, maxTribeSize, merge, move)
   }.toMap
+  def merge(fromTribeName: String, toTribe: Tribe): Unit = {
+    val fromTribe = graph.company.tribe(fromTribeName).get
+    merge(fromTribe, toTribe)
+  }
+  def move(fromSquadName: String, toTribe: Tribe): Unit = {
+    val fromSquad = for {
+      tribe <- graph.company.tribes
+      squad <- tribe.squads if squad.name == fromSquadName
+    } yield squad
+    move(fromSquad.head, toTribe)
+  }
+  def merge(fromTribe: Tribe, toTribe: Tribe)
+  def move(fromSquad: Squad, toTribe: Tribe)
   def prefTribeLink(graph: Graph, maxTribeSize: Int, bubbles: Map[Tribe, Bubble]) = {
     val (nextCouple, _) = graph.company.nextCoupleAndBestScore(maxTribeSize)
     nextCouple.map { case (tribe1, weight, tribe2) =>
@@ -44,13 +58,8 @@ trait GraphPane extends Pane {
     for ((tribe1, weight, tribe2) <- graph.company.ignored(cutWeight)) yield
       (tribe1, tribe2) -> (weight, Link(bubbles(tribe1), bubbles(tribe2), normalize(weight), LightGrey))
   }.toMap
-  def merge(fromTribeName: String, to: Tribe) = for (tribe <- graph.company.tribes.find(_.name == fromTribeName))
-    dragged(tribe, to)
-  def move(fromSquadName: String, to: Tribe) = for {
-    tribe <- graph.company.tribes
-    squad <- tribe.squads if squad.name == fromSquadName
-  } dragged(squad, to)
-  def show(graph: Graph, maxTribeSize: Int) = {
+  def show(graph: Graph, maxTribeSize: Int = this.maxTribeSize) = {
+    this.maxTribeSize = maxTribeSize
     val tBubbles = tribeBubbles(graph, maxTribeSize)
     val sBubbles = squadBubbles(graph, maxTribeSize)
     val pLink = prefTribeLink(graph, maxTribeSize, tBubbles)
@@ -73,7 +82,10 @@ trait GraphPane extends Pane {
         sBubbles.values ++ tBubbles.values
     }
   }
-  def show(company: Company, maxTribeSize: Int): Unit = show(Graph(company, this.graph), maxTribeSize)
+  def show(company: Company, maxTribeSize: Int, pair: Option[(Tribe, Vector)]): Unit = pair match {
+    case Some(pair) => show(Graph(company, this.graph + pair), maxTribeSize)
+    case None => show(Graph(company, this.graph), maxTribeSize)
+  }
   def animate(fromGraph: Graph, toGraph: Graph, maxTribeSize: Int)(action: => Any) = {
     val fromTribeBubble = tribeBubbles(fromGraph, maxTribeSize)
     val toTribeBubble = tribeBubbles(toGraph, maxTribeSize)
@@ -164,10 +176,43 @@ trait GraphPane extends Pane {
     }
     animation.play()
   }
+  onDragOver = { event =>
+    val buffer = event.getDragboard
+    if (buffer.hasString && Bubble.fromBuffer(buffer.getString).nonEmpty)
+      event.acceptTransferModes(TransferMode.Move)
+    event.consume()
+  }
+  onDragDropped = { event =>
+    val buffer = event.getDragboard
+    val position = Vector(event.getX, event.getY)
+    if (buffer.hasString) Bubble.fromBuffer(buffer.getString) match {
+      case Some((_, Some(squadName))) => dragSquad(squadName, position)
+      case Some((tribeName, None)) => dragTribe(tribeName, position)
+      case None =>
+    }
+  }
+  onDragDone = _.consume()
+  def dragSquad(squadName: String, position: Vector) = {
+    val list = for {
+      tribe <- graph.company.tribes
+      squad <- tribe.squads if squad.name == squadName
+    } yield (tribe, squad)
+    val (tribe, squad) = list.head
+    if (tribe.size == 1) show(graph + (tribe -> position))
+    else split(squad, position)
+  }
+  def dragTribe(tribeName: String, position: Vector) = {
+    val tribe = graph.company.tribe(tribeName).get
+    show(graph + (tribe -> position))
+  }
+  def split(squad: Squad, position: Vector)
 }
 object GraphPane {
-  def apply(mergeAction: (Tribe, Tribe) => Any, moveAction: (Squad, Tribe) => Any) = new GraphPane {
-    def dragged(from: Tribe, to: Tribe) = mergeAction(from, to)
-    def dragged(from: Squad, to: Tribe) = moveAction(from, to)
+  def apply(mergeAction: (Tribe, Tribe) => Any,
+            moveAction: (Squad, Tribe) => Any,
+            splitAction: (Squad, Vector) => Any) = new GraphPane {
+    def merge(fromTribe: Tribe, toTribe: Tribe) = mergeAction(fromTribe, toTribe)
+    def move(fromSquad: Squad, toTribe: Tribe) = moveAction(fromSquad, toTribe)
+    def split(squad: Squad, position: Vector) = splitAction(squad, position)
   }
 }

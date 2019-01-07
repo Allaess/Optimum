@@ -2,6 +2,7 @@ package mw.optimum.view
 
 import mw.optimum.graph.Vector
 import mw.optimum.model.{Squad, Tribe}
+import scalafx.scene.control.Tooltip
 import scalafx.scene.input.{ClipboardContent, TransferMode}
 import scalafx.scene.layout.StackPane
 import scalafx.scene.paint.Color
@@ -16,8 +17,8 @@ trait Bubble extends StackPane {
   def color: Color
   def tribe: Tribe
   def squadOption: Option[Squad]
-  def merge(fromTribeName: String)
-  def move(fromSquadName: String)
+  def dragTribe(fromTribeName: String)
+  def dragSquad(fromSquadName: String)
   private def format(text: String) = if (text.length > 16) text.take(15) + "..." else text
   def toBuffer = squadOption match {
     case Some(squad) => s"${tribe.name}\t${squad.name}"
@@ -26,10 +27,15 @@ trait Bubble extends StackPane {
   val circle = new Circle {
     radius = Bubble.radius
     fill = color
+
   }
   val text = new Text {
     text = format(label)
     wrappingWidth = Bubble.wrapping
+  }
+  if (label.length > 16) {
+    val info = new Tooltip(label)
+    Tooltip.install(this, info)
   }
   children = circle :: text :: Nil
   layoutX = centerX - Bubble.radius
@@ -64,10 +70,10 @@ trait Bubble extends StackPane {
     val buffer = event.getDragboard
     if (buffer.hasString) Bubble.fromBuffer(buffer.getString) match {
       case Some((_, Some(squadName))) =>
-        move(squadName)
+        dragSquad(squadName)
         event.setDropCompleted(true)
       case Some((tribeName, None)) =>
-        merge(tribeName)
+        dragTribe(tribeName)
         event.setDropCompleted(true)
       case None =>
         event.setDropCompleted(false)
@@ -88,8 +94,8 @@ object Bubble {
       def centerY = position.y
       def label = _tribe.squads.head.name
       def color = LightGreen
-      def merge(from: String) = mergeAction(from, tribe)
-      def move(from: String) = moveAction(from, tribe)
+      def dragTribe(fromTribeName: String) = mergeAction(fromTribeName, tribe)
+      def dragSquad(fromSquadName: String) = moveAction(fromSquadName, tribe)
     } else if (_tribe.size >= maxTribeSize) new Bubble {
       def tribe = _tribe
       def squadOption = None
@@ -97,8 +103,8 @@ object Bubble {
       def centerY = position.y
       def label = _tribe.name
       def color = LightGray
-      def merge(from: String) = mergeAction(from, tribe)
-      def move(from: String) = moveAction(from, tribe)
+      def dragTribe(fromTribeName: String) = mergeAction(fromTribeName, tribe)
+      def dragSquad(fromSquadName: String) = moveAction(fromSquadName, tribe)
     } else new Bubble {
       def tribe = _tribe
       def squadOption = None
@@ -106,12 +112,11 @@ object Bubble {
       def centerY = position.y
       def label = _tribe.name
       def color = Yellow
-      def merge(from: String) = mergeAction(from, tribe)
-      def move(from: String) = moveAction(from, tribe)
+      def dragTribe(fromTribeName: String) = mergeAction(fromTribeName, tribe)
+      def dragSquad(fromSquadName: String) = moveAction(fromSquadName, tribe)
     }
   def apply(squad: Squad, position: Vector, _tribe: Tribe, maxTribeSize: Int,
-            mergeAction: (String, Tribe) => Any, moveAction: (String, Tribe) => Any)
-  : Bubble =
+            mergeAction: (String, Tribe) => Any, moveAction: (String, Tribe) => Any): Bubble =
     if (_tribe.size >= maxTribeSize) new Bubble {
       def tribe = _tribe
       def squadOption = Some(squad)
@@ -119,8 +124,8 @@ object Bubble {
       def centerY = position.y
       def label = squad.name
       def color = LightGray
-      def merge(from: String) = mergeAction(from, tribe)
-      def move(from: String) = moveAction(from, tribe)
+      def dragTribe(fromTribeName: String) = mergeAction(fromTribeName, tribe)
+      def dragSquad(fromSquadName: String) = moveAction(fromSquadName, tribe)
     } else new Bubble {
       def tribe = _tribe
       def squadOption = Some(squad)
@@ -128,8 +133,8 @@ object Bubble {
       def centerY = position.y
       def label = squad.name
       def color = Cyan
-      def merge(from: String) = mergeAction(from, tribe)
-      def move(from: String) = moveAction(from, tribe)
+      def dragTribe(fromTribeName: String) = mergeAction(fromTribeName, tribe)
+      def dragSquad(fromSquadName: String) = moveAction(fromSquadName, tribe)
     }
   def fromBuffer(buffer: String) = buffer.split('\t') match {
     case Array(tribeName) => Some((tribeName, None))

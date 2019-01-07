@@ -1,4 +1,5 @@
 import mw.optimum.model.{Company, Squad, Tribe}
+import mw.optimum.graph.Vector
 import mw.optimum.view.GraphPane
 import scalafx.application.JFXApp
 import scalafx.application.JFXApp.PrimaryStage
@@ -15,7 +16,7 @@ object Optimum extends JFXApp {
   var undoStack = List.empty[Company]
   var redoStack = List.empty[Company]
   var scale = 1.0
-  val graphPane = GraphPane(merge, move)
+  val graphPane = GraphPane(merge, move, split)
   val sizeField = new Label {
     text = sizeText
   }
@@ -141,9 +142,9 @@ object Optimum extends JFXApp {
       graphPane.translateY = graphPane.height() * (scale - 1) / 2
     }
   }
-  def merge(tribe1: Tribe, tribe2: Tribe) = {
+  def merge(tribe: Tribe, toTribe: Tribe) = {
     undoStack ::= company
-    company = company.merge(tribe1, tribe2)
+    company = company.merge(tribe, toTribe)
     redoStack = Nil
     refresh()
   }
@@ -153,7 +154,14 @@ object Optimum extends JFXApp {
     redoStack = Nil
     refresh()
   }
-  def refresh(): Unit = {
+  def split(squad: Squad, position: Vector) = {
+    undoStack ::= company
+    company = company.split(squad)
+    redoStack = Nil
+    val pair = company.tribes.find(_.contains(squad)).map { tribe => tribe -> position }
+    refresh(pair)
+  }
+  def refresh(pair: Option[(Tribe, Vector)] = None): Unit = {
     val (next, best) = company.nextCoupleAndBestScore(maxTribeSize)
     nextCouple = next
     bestScore = best
@@ -167,7 +175,7 @@ object Optimum extends JFXApp {
     dropButton.disable = !company.tribes.exists(_.size > 1)
     nextButton.disable = nextCouple.isEmpty
     endButton.disable = nextCouple.isEmpty
-    graphPane.show(company, maxTribeSize)
+    graphPane.show(company, maxTribeSize, pair)
   }
   def name(tribe: Tribe) = if (tribe.name.startsWith("Tribe")) {
     if (tribe.size == 1) s"${tribe.squads.head.name}"
