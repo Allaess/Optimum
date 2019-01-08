@@ -18,7 +18,7 @@ trait Graph {
     }
   }.toMap
   def position(tribe: Tribe): Vector = positions(tribe)
-  def position(squad: Squad): Vector = squadPositions(squad)
+  def position(squad: Squad): Vector = squadPositions.getOrElse(squad, Vector.random(1400, 700) + Vector(100, 100))
   def +(pair: (Tribe, Vector)) = new Graph {
     def company = outer.company
     def positions = outer.positions + pair
